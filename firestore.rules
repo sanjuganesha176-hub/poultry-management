@@ -1,0 +1,86 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+    
+    function isSupervisor() {
+      return isAuthenticated() && 
+             exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.userType == 'supervisor';
+    }
+    
+    function isValidUser(data) {
+      return data.keys().hasAll(['uid', 'fullName', 'farmName', 'location', 'email', 'userType']) &&
+             data.userType in ['user', 'supervisor'] &&
+             data.uid is string &&
+             data.fullName is string &&
+             data.farmName is string &&
+             data.location is string &&
+             data.email is string;
+    }
+    
+    function isValidDailyData(data) {
+      return data.keys().hasAll(['userId', 'userName', 'batchId', 'date', 'eggCount', 'mortality', 'feed']) &&
+             data.userId is string &&
+             data.userName is string &&
+             data.batchId is string &&
+             data.date is string &&
+             data.eggCount is int &&
+             data.mortality is int &&
+             data.feed is number &&
+             data.eggCount >= 0 &&
+             data.mortality >= 0 &&
+             data.feed >= 0;
+    }
+    
+    // Users collection
+    match /users/{userId} {
+      // Anyone authenticated can read user profiles
+      allow read: if isAuthenticated();
+      
+      // Users can only create their own profile
+      allow create: if isOwner(userId) && isValidUser(request.resource.data);
+      
+      // Users can only update their own profile
+      allow update: if isOwner(userId) && 
+                       isValidUser(request.resource.data) &&
+                       request.resource.data.uid == resource.data.uid &&
+                       request.resource.data.userType == resource.data.userType;
+      
+      // Users cannot delete their profile
+      allow delete: if false;
+    }
+    
+    // Daily data collection
+    match /dailyData/{dataId} {
+      // All authenticated users can read data
+      allow read: if isAuthenticated();
+      
+      // Users can create their own data entries
+      allow create: if isAuthenticated() && 
+                       isValidDailyData(request.resource.data) &&
+                       request.resource.data.userId == request.auth.uid;
+      
+      // Users can update their own data, supervisors can update sentToSupervisor field
+      allow update: if (isOwner(resource.data.userId) && isValidDailyData(request.resource.data)) ||
+                       (isSupervisor() && 
+                        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['sentToSupervisor', 'sentAt']));
+      
+      // Only owners can delete their data
+      allow delete: if isOwner(resource.data.userId);
+    }
+    
+    // Deny all other access
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Setup Instructions - Poultry Management</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 40px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #2563eb;
+            border-bottom: 3px solid #2563eb;
+            padding-bottom: 10px;
+        }
+        h2 {
+            color: #1e40af;
+            margin-top: 30px;
+        }
+        .step {
+            background: #f0f9ff;
+            padding: 20px;
+            margin: 20px 0;
+            border-left: 4px solid #2563eb;
+            border-radius: 5px;
+        }
+        .code {
+            background: #1f2937;
+            color: #10b981;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            font-family: 'Courier New', monospace;
+            margin: 10px 0;
+        }
+        .warning {
+            background: #fef3c7;
+            padding: 15px;
+            border-left: 4px solid #f59e0b;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+        .success {
+            background: #d1fae5;
+            padding: 15px;
+            border-left: 4px solid #10b981;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+        ul {
+            line-height: 1.8;
+        }
+        a {
+            color: #2563eb;
+            text-decoration: none;
+        }
+        a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🐔 Poultry Management System - Setup Instructions</h1>
+        
+        <div class="success">
+            <strong>✅ Project Created Successfully!</strong><br>
+            Follow the steps below to complete the setup and run your application.
+        </div>
+
+        <h2>📋 Quick Start</h2>
+        
+        <div class="step">
+            <h3>Step 1: Install Dependencies</h3>
+            <p>Open PowerShell in the project directory and run:</p>
+            <div class="code">npm install</div>
+        </div>
+
+        <div class="step">
+            <h3>Step 2: Configure Firebase</h3>
+            <p>You need to set up Firebase for authentication, database, and storage:</p>
+            <ol>
+                <li>Go to <a href="https://console.firebase.google.com/" target="_blank">Firebase Console</a></li>
+                <li>Create a new project</li>
+                <li>Enable the following services:
+                    <ul>
+                        <li><strong>Authentication</strong> (Phone + Email/Password)</li>
+                        <li><strong>Firestore Database</strong></li>
+                        <li><strong>Storage</strong></li>
+                    </ul>
+                </li>
+                <li>Get your Firebase configuration from Project Settings</li>
+            </ol>
+        </div>
+
+        <div class="step">
+            <h3>Step 3: Add Firebase Configuration</h3>
+            <p>Copy the template file and add your Firebase credentials:</p>
+            <div class="code">
+                # Copy the template<br>
+                copy public\js\firebase-config-template.js public\js\firebase-config.js
+            </div>
+            <p>Then open <code>public/js/firebase-config.js</code> and replace with your actual Firebase config:</p>
+            <div class="code">
+const firebaseConfig = {<br>
+&nbsp;&nbsp;&nbsp;&nbsp;apiKey: "YOUR_API_KEY",<br>
+&nbsp;&nbsp;&nbsp;&nbsp;authDomain: "YOUR_PROJECT.firebaseapp.com",<br>
+&nbsp;&nbsp;&nbsp;&nbsp;projectId: "YOUR_PROJECT_ID",<br>
+&nbsp;&nbsp;&nbsp;&nbsp;storageBucket: "YOUR_PROJECT.appspot.com",<br>
+&nbsp;&nbsp;&nbsp;&nbsp;messagingSenderId: "YOUR_SENDER_ID",<br>
+&nbsp;&nbsp;&nbsp;&nbsp;appId: "YOUR_APP_ID"<br>
+};
+            </div>
+        </div>
+
+        <div class="warning">
+            <strong>⚠️ Important:</strong> The file <code>firebase-config.js</code> is in .gitignore to protect your credentials. Never commit your actual Firebase keys to version control!
+        </div>
+
+        <div class="step">
+            <h3>Step 4: Configure Firebase Security Rules</h3>
+            <p>Set up security rules in Firebase Console:</p>
+            <ul>
+                <li><strong>Firestore Rules:</strong> Go to Firestore → Rules tab</li>
+                <li><strong>Storage Rules:</strong> Go to Storage → Rules tab</li>
+            </ul>
+            <p>See <code>FIREBASE_SETUP.md</code> for detailed security rules.</p>
+        </div>
+
+        <div class="step">
+            <h3>Step 5: Start the Server</h3>
+            <p>Run the development server:</p>
+            <div class="code">npm start</div>
+            <p>The server will start on <a href="http://localhost:3000" target="_blank">http://localhost:3000</a></p>
+        </div>
+
+        <h2>📱 Features Overview</h2>
+        
+        <div class="step">
+            <h3>Authentication</h3>
+            <ul>
+                <li>✅ Sign up with mobile number + OTP verification</li>
+                <li>✅ Password creation during signup</li>
+                <li>✅ Login with mobile number + password (no OTP needed)</li>
+                <li>✅ Separate User and Supervisor accounts</li>
+            </ul>
+        </div>
+
+        <div class="step">
+            <h3>User Dashboard</h3>
+            <ul>
+                <li>✅ Add daily batch data (eggs, mortality, feed, vaccination, medicine)</li>
+                <li>✅ Upload photos for each entry</li>
+                <li>✅ Send data to supervisor via mobile number</li>
+                <li>✅ View data history with filtering</li>
+                <li>✅ Filter by batch ID and date</li>
+            </ul>
+        </div>
+
+        <div class="step">
+            <h3>Supervisor Dashboard</h3>
+            <ul>
+                <li>✅ Receive data from multiple users</li>
+                <li>✅ View each user's data separately by batch</li>
+                <li>✅ Detailed view of all metrics</li>
+                <li>✅ Individual graphs for egg production and mortality per user</li>
+                <li>✅ Filter by user, batch ID, date range, and data type</li>
+                <li>✅ Monthly comparison view with all users in one frame</li>
+                <li>✅ Search by user name, batch ID, or date</li>
+                <li>✅ Generate PDF reports (daily, weekly, monthly)</li>
+            </ul>
+        </div>
+
+        <div class="step">
+            <h3>Profile Management</h3>
+            <ul>
+                <li>✅ Update farm name and location</li>
+                <li>✅ Change password</li>
+                <li>✅ View account information</li>
+            </ul>
+        </div>
+
+        <h2>🔧 Firebase Keys Required</h2>
+        
+        <div class="step">
+            <p>You will need the following from Firebase Console:</p>
+            <ol>
+                <li><strong>API Key</strong> - For authentication and API access</li>
+                <li><strong>Auth Domain</strong> - Your project's authentication domain</li>
+                <li><strong>Project ID</strong> - Your Firebase project identifier</li>
+                <li><strong>Storage Bucket</strong> - For storing photos</li>
+                <li><strong>Messaging Sender ID</strong> - For push notifications</li>
+                <li><strong>App ID</strong> - Your web app identifier</li>
+            </ol>
+        </div>
+
+        <h2>📚 Documentation</h2>
+        
+        <div class="step">
+            <ul>
+                <li><code>README.md</code> - Project overview and setup</li>
+                <li><code>FIREBASE_SETUP.md</code> - Detailed Firebase configuration guide</li>
+                <li><a href="https://firebase.google.com/docs" target="_blank">Firebase Documentation</a></li>
+            </ul>
+        </div>
+
+        <h2>🚀 Production Deployment</h2>
+        
+        <div class="warning">
+            <strong>Before deploying to production:</strong>
+            <ol>
+                <li>Update Firebase security rules (remove test mode)</li>
+                <li>Enable Firebase App Check</li>
+                <li>Use environment variables for sensitive data</li>
+                <li>Set up proper password hashing</li>
+                <li>Add HTTPS support</li>
+                <li>Configure authorized domains in Firebase</li>
+            </ol>
+        </div>
+
+        <h2>💡 Tips</h2>
+        
+        <div class="success">
+            <ul>
+                <li>Use test phone numbers during development (set in Firebase Console)</li>
+                <li>Check browser console for any errors</li>
+                <li>Firestore will prompt you to create indexes when needed</li>
+                <li>Monitor Firebase usage in the console to stay within free tier</li>
+                <li>Enable Cloud Functions for advanced features like notifications</li>
+            </ul>
+        </div>
+
+        <h2>🆘 Need Help?</h2>
+        
+        <div class="step">
+            <p>Common issues and solutions:</p>
+            <ul>
+                <li><strong>Phone auth not working:</strong> Check authorized domains in Firebase</li>
+                <li><strong>Permission denied:</strong> Review Firestore security rules</li>
+                <li><strong>Photo upload fails:</strong> Check Storage rules and authentication</li>
+                <li><strong>Charts not showing:</strong> Ensure Chart.js is loaded correctly</li>
+            </ul>
+            <p>For more help, check <code>FIREBASE_SETUP.md</code> troubleshooting section.</p>
+        </div>
+
+        <div class="success">
+            <strong>🎉 You're all set!</strong><br>
+            Once you've completed the Firebase setup, run <code>npm start</code> and open your browser to get started.
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,42 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Simple rules for development - authenticated users can read/write their own data
+    
+    // Users collection
+    match /users/{userId} {
+      // Authenticated users can read any user profile
+      allow read: if request.auth != null;
+      
+      // Users can create and update their own profile
+      allow create, update: if request.auth != null && request.auth.uid == userId;
+      
+      // No deletes
+      allow delete: if false;
+    }
+    
+    // Daily data collection
+    match /dailyData/{dataId} {
+      // Authenticated users can read all data
+      allow read: if request.auth != null;
+      
+      // Users can create their own data
+      allow create: if request.auth != null && 
+                       request.resource.data.userId == request.auth.uid;
+      
+      // Users can update their own data, or supervisors can update sentToSupervisor field
+      allow update: if request.auth != null && 
+                       (resource.data.userId == request.auth.uid || 
+                        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['sentToSupervisor', 'sentAt']));
+      
+      // Users can delete their own data
+      allow delete: if request.auth != null && resource.data.userId == request.auth.uid;
+    }
+    
+    // Deny all other access
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

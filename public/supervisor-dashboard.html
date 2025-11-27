@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Supervisor Dashboard - Poultry Management</title>
+    <link rel="stylesheet" href="css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="navbar-content">
+            <a href="/" class="navbar-brand">🐔 Poultry Management</a>
+            <ul class="navbar-menu">
+                <li><a href="/profile">Profile</a></li>
+                <li><a href="#" id="logoutBtn">Logout</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin: 2rem 0;">
+            <div>
+                <h1 style="margin: 0;">Supervisor Dashboard</h1>
+                <p style="margin: 0.5rem 0 0 0;">Welcome, <span id="supervisorName">Supervisor</span>!</p>
+            </div>
+            <button id="refreshDataBtn" class="btn btn-primary" style="display: flex; align-items: center; gap: 5px;">
+                <span>🔄</span> Refresh Data
+            </button>
+        </div>
+
+        <div id="alertContainer"></div>
+
+        <!-- Statistics Cards -->
+        <div class="dashboard-grid" id="statsCards">
+            <div class="stat-card">
+                <h3>Total Users</h3>
+                <div class="stat-value" id="totalUsers">0</div>
+            </div>
+            <div class="stat-card">
+                <h3>Total Batches</h3>
+                <div class="stat-value" id="totalBatches">0</div>
+            </div>
+            <div class="stat-card">
+                <h3>Today's Eggs</h3>
+                <div class="stat-value" id="todayEggs">0</div>
+            </div>
+            <div class="stat-card">
+                <h3>Today's Mortality</h3>
+                <div class="stat-value" id="todayMortality">0</div>
+            </div>
+        </div>
+
+        <!-- Filters and Search -->
+        <div class="card">
+            <div class="card-header">Filters & Search</div>
+            
+            <div class="filters">
+                <div class="filter-group">
+                    <label>User</label>
+                    <select id="filterUser" class="form-control">
+                        <option value="">All Users</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label>Batch ID</label>
+                    <input type="text" id="filterBatchId" class="form-control" placeholder="Enter Batch ID">
+                </div>
+                <div class="filter-group">
+                    <label>Date From</label>
+                    <input type="date" id="filterDateFrom" class="form-control">
+                </div>
+                <div class="filter-group">
+                    <label>Date To</label>
+                    <input type="date" id="filterDateTo" class="form-control">
+                </div>
+                <div class="filter-group">
+                    <label>Data Type</label>
+                    <select id="filterDataType" class="form-control">
+                        <option value="">All</option>
+                        <option value="eggs">Eggs</option>
+                        <option value="mortality">Mortality</option>
+                        <option value="feed">Feed</option>
+                        <option value="vaccination">Vaccination</option>
+                        <option value="medicine">Medicine</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="flex gap-2 mt-2">
+                <button id="applyFiltersBtn" class="btn btn-primary">Apply Filters</button>
+                <button id="clearFiltersBtn" class="btn btn-secondary">Clear Filters</button>
+                <button id="monthlyViewBtn" class="btn btn-success">Monthly View</button>
+                <button id="generateReportBtn" class="btn btn-danger">Generate PDF Report</button>
+            </div>
+        </div>
+
+        <!-- User Data by Batches -->
+        <div class="card">
+            <div class="card-header">User Data by Batches</div>
+            <div id="userBatchesContainer"></div>
+        </div>
+
+        <!-- Monthly View Charts -->
+        <div class="card hidden" id="monthlyViewCard">
+            <div class="card-header">Monthly Comparison - All Users</div>
+            <div class="chart-container" style="height: 400px;">
+                <canvas id="monthlyEggsChart"></canvas>
+            </div>
+            <div class="chart-container" style="height: 400px;">
+                <canvas id="monthlyMortalityChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- View Detail Modal -->
+    <div id="detailModal" class="modal">
+        <div class="modal-content" style="max-width: 800px;">
+            <div class="modal-header">
+                <h2>Batch Details</h2>
+                <span class="close-modal" onclick="closeDetailModal()">&times;</span>
+            </div>
+            <div id="detailContent"></div>
+        </div>
+    </div>
+
+    <script type="module" src="js/firebase-config.js"></script>
+    <script type="module" src="js/supervisor-dashboard.js"></script>
+</body>
+</html>
