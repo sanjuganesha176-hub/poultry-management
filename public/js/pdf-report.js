@@ -1,5 +1,5 @@
 // PDF Report Generation using jsPDF
-import { jsPDF } from 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+// jsPDF is loaded globally from CDN in supervisor-dashboard.html
 
 export function generatePDFReport(data, supervisor) {
     if (data.length === 0) {
@@ -7,7 +7,15 @@ export function generatePDFReport(data, supervisor) {
         return;
     }
 
+    // Check if jsPDF is available
+    if (!window.jspdf || !window.jspdf.jsPDF) {
+        alert('PDF library not loaded. Please refresh the page.');
+        console.error('jsPDF not found on window object');
+        return;
+    }
+
     // Create new PDF document
+    const { jsPDF } = window.jspdf;
     const doc = new jsPDF();
     const pageWidth = doc.internal.pageSize.getWidth();
     const pageHeight = doc.internal.pageSize.getHeight();
@@ -177,4 +185,132 @@ export function generateMonthlyReport(data, supervisor) {
     const dateTo = today.toISOString().split('T')[0];
 
     generateDateRangeReport(data, supervisor, dateFrom, dateTo);
+}
+
+// Generate Income PDF Report
+export function generateIncomePDFReport(incomeData, supervisor) {
+    if (incomeData.length === 0) {
+        alert('No income data available to generate report');
+        return;
+    }
+
+    // Check if jsPDF is available
+    if (!window.jspdf || !window.jspdf.jsPDF) {
+        alert('PDF library not loaded. Please refresh the page.');
+        console.error('jsPDF not found on window object');
+        return;
+    }
+
+    // Create new PDF document
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+    let yPosition = 20;
+
+    // Add header
+    doc.setFontSize(20);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Income Report', pageWidth / 2, yPosition, { align: 'center' });
+    
+    yPosition += 10;
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'normal');
+    doc.text(`Supervisor: ${supervisor.fullName}`, 20, yPosition);
+    
+    yPosition += 7;
+    doc.text(`Generated: ${new Date().toLocaleString()}`, 20, yPosition);
+    
+    yPosition += 10;
+    doc.setLineWidth(0.5);
+    doc.line(20, yPosition, pageWidth - 20, yPosition);
+    yPosition += 10;
+
+    // Calculate totals
+    const totalIncome = incomeData.reduce((sum, item) => sum + item.amount, 0);
+    const totalEggSales = incomeData.filter(i => i.incomeType === 'Egg Sale').reduce((sum, item) => sum + item.amount, 0);
+    const totalMeatSales = incomeData.filter(i => i.incomeType === 'Meat Sale').reduce((sum, item) => sum + item.amount, 0);
+
+    // Add summary
+    doc.setFontSize(14);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Income Summary', 20, yPosition);
+    yPosition += 8;
+
+    doc.setFontSize(11);
+    doc.setFont('helvetica', 'normal');
+    doc.text(`Total Income: ₹${totalIncome.toFixed(2)}`, 25, yPosition);
+    yPosition += 6;
+    doc.text(`Egg Sales: ₹${totalEggSales.toFixed(2)}`, 25, yPosition);
+    yPosition += 6;
+    doc.text(`Meat Sales: ₹${totalMeatSales.toFixed(2)}`, 25, yPosition);
+    yPosition += 6;
+    doc.text(`Total Entries: ${incomeData.length}`, 25, yPosition);
+    yPosition += 10;
+
+    // Table header
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(10);
+    doc.text('Date', 20, yPosition);
+    doc.text('User', 45, yPosition);
+    doc.text('Type', 85, yPosition);
+    doc.text('Batch ID', 115, yPosition);
+    doc.text('Qty', 145, yPosition);
+    doc.text('Amount (₹)', 165, yPosition);
+    
+    yPosition += 2;
+    doc.setLineWidth(0.3);
+    doc.line(20, yPosition, pageWidth - 20, yPosition);
+    yPosition += 5;
+
+    // Table rows
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(9);
+    
+    incomeData.forEach((income, index) => {
+        if (yPosition > pageHeight - 30) {
+            doc.addPage();
+            yPosition = 20;
+            
+            // Repeat header on new page
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(10);
+            doc.text('Date', 20, yPosition);
+            doc.text('User', 45, yPosition);
+            doc.text('Type', 85, yPosition);
+            doc.text('Batch ID', 115, yPosition);
+            doc.text('Qty', 145, yPosition);
+            doc.text('Amount (₹)', 165, yPosition);
+            yPosition += 5;
+            doc.setFont('helvetica', 'normal');
+            doc.setFontSize(9);
+        }
+
+        doc.text(income.date || 'N/A', 20, yPosition);
+        doc.text((income.userName || 'Unknown').substring(0, 15), 45, yPosition);
+        doc.text(income.incomeType || 'N/A', 85, yPosition);
+        doc.text(income.batchId || 'N/A', 115, yPosition);
+        doc.text(`${income.quantity || 0}`, 145, yPosition);
+        doc.text(`₹${income.amount.toFixed(2)}`, 165, yPosition);
+        
+        yPosition += 6;
+    });
+
+    // Add footer
+    const pageCount = doc.internal.getNumberOfPages();
+    for (let i = 1; i <= pageCount; i++) {
+        doc.setPage(i);
+        doc.setFontSize(8);
+        doc.setFont('helvetica', 'normal');
+        doc.text(
+            `Page ${i} of ${pageCount} | Generated by Poultry Management System`,
+            pageWidth / 2,
+            pageHeight - 10,
+            { align: 'center' }
+        );
+    }
+
+    // Save PDF
+    const filename = `Income_Report_${new Date().toISOString().split('T')[0]}.pdf`;
+    doc.save(filename);
 }

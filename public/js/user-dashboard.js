@@ -94,6 +94,16 @@ function showAlert(message, type = 'info') {
 document.getElementById('photoUpload').addEventListener('change', (e) => {
     const file = e.target.files[0];
     if (file) {
+        // Check file size (limit to 5MB)
+        const maxSize = 5 * 1024 * 1024; // 5MB in bytes
+        if (file.size > maxSize) {
+            showAlert('❌ Photo size too large! Please upload a photo smaller than 5MB.', 'error');
+            e.target.value = ''; // Clear the input
+            document.getElementById('photoPreview').classList.add('hidden');
+            uploadedPhotoFile = null;
+            return;
+        }
+        
         uploadedPhotoFile = file;
         const reader = new FileReader();
         reader.onload = (e) => {
@@ -135,12 +145,23 @@ document.getElementById('dailyDataForm').addEventListener('submit', async (e) =>
 
         // Upload photo if exists
         if (uploadedPhotoFile) {
-            const photoRef = ref(storage, `photos/${currentUser.uid}/${Date.now()}_${uploadedPhotoFile.name}`);
-            await uploadBytes(photoRef, uploadedPhotoFile);
-            formData.photoUrl = await getDownloadURL(photoRef);
+            console.log('Uploading photo:', uploadedPhotoFile.name, 'Size:', uploadedPhotoFile.size);
+            try {
+                const photoRef = ref(storage, `photos/${currentUser.uid}/${Date.now()}_${uploadedPhotoFile.name}`);
+                console.log('Photo ref created, uploading...');
+                await uploadBytes(photoRef, uploadedPhotoFile);
+                console.log('Photo uploaded, getting URL...');
+                formData.photoUrl = await getDownloadURL(photoRef);
+                console.log('Photo URL obtained:', formData.photoUrl);
+            } catch (photoError) {
+                console.error('Photo upload error:', photoError);
+                showAlert('❌ Error uploading photo: ' + photoError.message + '\n\nSaving data without photo...', 'warning');
+                // Continue without photo
+            }
         }
 
         // Save to Firestore
+        console.log('Saving to Firestore...', formData);
         const docRef = await addDoc(collection(db, 'dailyData'), formData);
         console.log('Data saved with ID:', docRef.id);
 
@@ -289,7 +310,7 @@ document.getElementById('dataTableBody')?.addEventListener('click', async (e) =>
 });
 
 // Load user data
-async function loadUserData(filterBatchId = '', filterDate = '') {
+async function loadUserData(filterBatchId = '', filterBatchNumber = '', filterDate = '') {
     try {
         const tbody = document.getElementById('dataTableBody');
         tbody.innerHTML = '<tr><td colspan="7" class="text-center">Loading...</td></tr>';
@@ -321,6 +342,7 @@ async function loadUserData(filterBatchId = '', filterDate = '') {
             
             // Apply filters
             if (filterBatchId && data.batchId !== filterBatchId) return;
+            if (filterBatchNumber && data.batchNumber !== parseInt(filterBatchNumber)) return;
             if (filterDate && data.date !== filterDate) return;
 
             const row = document.createElement('tr');
@@ -482,8 +504,9 @@ async function deleteDailyData(docId) {
 // Apply filters
 document.getElementById('applyFilterBtn').addEventListener('click', () => {
     const filterBatchId = document.getElementById('filterBatchId').value;
+    const filterBatchNumber = document.getElementById('filterBatchNumber').value;
     const filterDate = document.getElementById('filterDate').value;
-    loadUserData(filterBatchId, filterDate);
+    loadUserData(filterBatchId, filterBatchNumber, filterDate);
 });
 
 // Logout

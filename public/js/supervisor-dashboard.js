@@ -14,6 +14,7 @@ let currentSupervisor = null;
 let allData = [];
 let filteredData = [];
 let userCharts = {};
+let supervisorIncomeData = [];
 
 // Check authentication
 async function checkAuth() {
@@ -196,6 +197,12 @@ document.getElementById('userBatchesContainer')?.addEventListener('click', (e) =
         const id = e.target.getAttribute('data-id');
         viewFullDetail(id);
     }
+    
+    if (e.target.classList.contains('monthly-view-btn')) {
+        const userId = e.target.getAttribute('data-userid');
+        const userName = e.target.getAttribute('data-username');
+        showMonthlyViewForUser(userId, userName);
+    }
 });
 
 // Display user batches
@@ -295,8 +302,15 @@ function displayUserBatches() {
 
         userCard.innerHTML = `
             <div class="card-header" style="background: linear-gradient(135deg, #2563eb, #1e40af); color: white; margin: -2rem -2rem 2rem -2rem; padding: 1.5rem 2rem;">
-                <h3 style="margin: 0; color: white;">${userData.userName}</h3>
-                <p style="margin: 0.5rem 0 0 0; opacity: 0.9;">${userData.farmName}</p>
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <h3 style="margin: 0; color: white;">${userData.userName}</h3>
+                        <p style="margin: 0.5rem 0 0 0; opacity: 0.9;">${userData.farmName}</p>
+                    </div>
+                    <button class="btn btn-success monthly-view-btn" data-userid="${userId}" data-username="${userData.userName}" style="background: white; color: #2563eb;">
+                        📅 Monthly View
+                    </button>
+                </div>
             </div>
             ${batchesHtml}
         `;
@@ -481,150 +495,128 @@ document.getElementById('clearFiltersBtn').addEventListener('click', () => {
     showAlert('Filters cleared', 'info');
 });
 
-// Monthly view
-document.getElementById('monthlyViewBtn').addEventListener('click', () => {
-    const monthlyCard = document.getElementById('monthlyViewCard');
-    monthlyCard.classList.toggle('hidden');
+// Monthly View for Individual User
+function showMonthlyViewForUser(userId, userName) {
+    const userMonthlyData = filteredData.filter(d => d.userId === userId);
     
-    if (!monthlyCard.classList.contains('hidden')) {
-        createMonthlyCharts();
+    if (userMonthlyData.length === 0) {
+        alert('No data available for this user');
+        return;
     }
-});
-
-// Create monthly comparison charts
-function createMonthlyCharts() {
-    // Group data by user and date
-    const userDataMap = new Map();
     
-    filteredData.forEach(data => {
-        if (!userDataMap.has(data.userId)) {
-            userDataMap.set(data.userId, {
-                userName: data.userName,
-                dates: [],
-                eggs: [],
-                mortality: []
-            });
+    // Group data by month
+    const monthlyData = {};
+    userMonthlyData.forEach(data => {
+        const month = data.date.substring(0, 7); // Get YYYY-MM
+        if (!monthlyData[month]) {
+            monthlyData[month] = {
+                totalEggs: 0,
+                totalMortality: 0,
+                totalFeed: 0,
+                count: 0
+            };
         }
-        
-        const userData = userDataMap.get(data.userId);
-        const dateIndex = userData.dates.indexOf(data.date);
-        
-        if (dateIndex === -1) {
-            userData.dates.push(data.date);
-            userData.eggs.push(data.eggCount);
-            userData.mortality.push(data.mortality);
-        } else {
-            userData.eggs[dateIndex] += data.eggCount;
-            userData.mortality[dateIndex] += data.mortality;
-        }
+        monthlyData[month].totalEggs += data.eggCount;
+        monthlyData[month].totalMortality += data.mortality;
+        monthlyData[month].totalFeed += data.feed;
+        monthlyData[month].count += 1;
     });
-
-    // Get all unique dates
-    const allDates = new Set();
-    userDataMap.forEach(userData => {
-        userData.dates.forEach(date => allDates.add(date));
-    });
-    const sortedDates = Array.from(allDates).sort();
-
-    // Prepare datasets for eggs
-    const eggDatasets = [];
-    const mortalityDatasets = [];
-    const colors = [
-        '#2563eb', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', 
-        '#ec4899', '#14b8a6', '#f97316', '#06b6d4', '#84cc16'
-    ];
     
-    let colorIndex = 0;
-    userDataMap.forEach((userData, userId) => {
-        const color = colors[colorIndex % colors.length];
-        
-        // Align data with all dates
-        const alignedEggs = sortedDates.map(date => {
-            const index = userData.dates.indexOf(date);
-            return index !== -1 ? userData.eggs[index] : 0;
-        });
-        
-        const alignedMortality = sortedDates.map(date => {
-            const index = userData.dates.indexOf(date);
-            return index !== -1 ? userData.mortality[index] : 0;
-        });
-        
-        eggDatasets.push({
-            label: userData.userName,
-            data: alignedEggs,
-            borderColor: color,
-            backgroundColor: color + '20',
-            tension: 0.4
-        });
-        
-        mortalityDatasets.push({
-            label: userData.userName,
-            data: alignedMortality,
-            borderColor: color,
-            backgroundColor: color + '20',
-            tension: 0.4
-        });
-        
-        colorIndex++;
-    });
-
-    // Create egg comparison chart
-    const eggCtx = document.getElementById('monthlyEggsChart');
-    if (eggCtx) {
-        if (userCharts.monthlyEggs) {
-            userCharts.monthlyEggs.destroy();
-        }
-        userCharts.monthlyEggs = new Chart(eggCtx, {
-            type: 'line',
-            data: {
-                labels: sortedDates,
-                datasets: eggDatasets
+    const months = Object.keys(monthlyData).sort();
+    const eggData = months.map(m => monthlyData[m].totalEggs);
+    const mortalityData = months.map(m => monthlyData[m].totalMortality);
+    const feedData = months.map(m => monthlyData[m].totalFeed);
+    
+    // Show modal
+    document.getElementById('monthlyViewModal').classList.add('active');
+    document.getElementById('monthlyViewTitle').textContent = `Monthly View - ${userName}`;
+    
+    // Create chart
+    const ctx = document.getElementById('monthlyViewChart').getContext('2d');
+    
+    // Destroy existing chart if any
+    if (userCharts.monthlyView) {
+        userCharts.monthlyView.destroy();
+    }
+    
+    userCharts.monthlyView = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: months,
+            datasets: [
+                {
+                    label: 'Total Eggs',
+                    data: eggData,
+                    backgroundColor: '#10b981',
+                    borderColor: '#059669',
+                    borderWidth: 1
+                },
+                {
+                    label: 'Total Mortality',
+                    data: mortalityData,
+                    backgroundColor: '#ef4444',
+                    borderColor: '#dc2626',
+                    borderWidth: 1
+                },
+                {
+                    label: 'Total Feed (kg)',
+                    data: feedData,
+                    backgroundColor: '#f59e0b',
+                    borderColor: '#d97706',
+                    borderWidth: 1
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                title: {
+                    display: true,
+                    text: `Monthly Summary for ${userName}`
+                },
+                legend: {
+                    display: true,
+                    position: 'top'
+                }
             },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    title: {
-                        display: true,
-                        text: 'Egg Production Comparison - All Users'
-                    },
-                    legend: { display: true }
+            scales: {
+                y: {
+                    beginAtZero: true
                 }
             }
-        });
-    }
-
-    // Create mortality comparison chart
-    const mortalityCtx = document.getElementById('monthlyMortalityChart');
-    if (mortalityCtx) {
-        if (userCharts.monthlyMortality) {
-            userCharts.monthlyMortality.destroy();
         }
-        userCharts.monthlyMortality = new Chart(mortalityCtx, {
-            type: 'line',
-            data: {
-                labels: sortedDates,
-                datasets: mortalityDatasets
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    title: {
-                        display: true,
-                        text: 'Mortality Comparison - All Users'
-                    },
-                    legend: { display: true }
-                }
-            }
-        });
-    }
+    });
 }
+
+window.closeMonthlyViewModal = function() {
+    document.getElementById('monthlyViewModal').classList.remove('active');
+};
 
 // Generate PDF Report
 document.getElementById('generateReportBtn').addEventListener('click', () => {
     import('./pdf-report.js').then(module => {
         module.generatePDFReport(filteredData, currentSupervisor);
+    });
+});
+
+// Generate Income PDF Report
+document.getElementById('generateIncomeReportBtn')?.addEventListener('click', () => {
+    console.log('Generate Income PDF clicked');
+    console.log('Income data:', supervisorIncomeData);
+    console.log('Supervisor:', currentSupervisor);
+    
+    if (!supervisorIncomeData || supervisorIncomeData.length === 0) {
+        alert('No income data available. Please make sure income entries have been sent to you.');
+        return;
+    }
+    
+    import('./pdf-report.js').then(module => {
+        console.log('PDF module loaded, generating report...');
+        module.generateIncomePDFReport(supervisorIncomeData, currentSupervisor);
+    }).catch(error => {
+        console.error('Error loading PDF module:', error);
+        alert('Error loading PDF generator: ' + error.message);
     });
 });
 
@@ -646,6 +638,9 @@ async function loadSupervisorIncomeData() {
                 incomeData.push({ id: doc.id, ...data });
             }
         });
+        
+        // Store in global variable for PDF generation
+        supervisorIncomeData = incomeData;
         
         console.log('Found income entries for supervisor:', incomeData.length);
         

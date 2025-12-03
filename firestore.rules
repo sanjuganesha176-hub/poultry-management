@@ -28,6 +28,7 @@ service cloud.firestore {
     }
     
     function isValidDailyData(data) {
+      // Check only required fields, allow additional optional fields
       return data.keys().hasAll(['userId', 'userName', 'batchId', 'date', 'eggCount', 'mortality', 'feed']) &&
              data.userId is string &&
              data.userName is string &&
@@ -38,7 +39,11 @@ service cloud.firestore {
              data.feed is number &&
              data.eggCount >= 0 &&
              data.mortality >= 0 &&
-             data.feed >= 0;
+             data.feed >= 0 &&
+             // Additional fields are optional
+             (!data.keys().hasAny(['userEmail']) || data.userEmail is string) &&
+             (!data.keys().hasAny(['farmName']) || data.farmName is string) &&
+             (!data.keys().hasAny(['photoUrl']) || data.photoUrl is string);
     }
     
     // Users collection
